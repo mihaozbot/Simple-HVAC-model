@@ -1,6 +1,7 @@
 clear all; close all; clc;
 set(0,'defaultTextInterpreter','latex')
 warning('on', 'globaloptim:particleswarm:initialSwarmNotInBounds');
+set(0,'defaultTextInterpreter','latex')
 
 global ts c_z % d_D d_I
 %global K_D_min K_D_max tau_D_min tau_D_max K_I_min ...
@@ -34,10 +35,11 @@ for iw = 1:1:length(Q_P_week(:,1))
         - max(abs(T_o_data(Q_P_week(iw,1))-T_z_data(Q_P_week(iw,1))),abs(T_o_data(Q_P_week(iw,2))-T_z_data(Q_P_week(iw,2)))));
     Q_P_0_test(Q_P_week(iw,1):Q_P_week(iw,2)) = (max(T_z_data(Q_P_week(iw,1):Q_P_week(iw,2))) - max(T_z_data(Q_P_week(iw,1)),T_z_data(Q_P_week(iw,2))));
     Q_P_0(Q_P_week(iw,1):Q_P_week(iw,2)) = Q_P_0(Q_P_week(iw,1):Q_P_week(iw,2))*...
-        (min(10,max(T_z_data(Q_P_week(iw,1):Q_P_week(iw,2))) - max(T_z_data(Q_P_week(iw,1)),T_z_data(Q_P_week(iw,2)))));
+        (min(3,max(T_z_data(Q_P_week(iw,1):Q_P_week(iw,2))) - max(T_z_data(Q_P_week(iw,1)),T_z_data(Q_P_week(iw,2)))));
     % end
-    T_0(Q_P_week(iw,1):Q_P_week(iw,2)) = mean(T_z_data(Q_P_week(iw,1):Q_P_week(iw,2)));
+    T_0(Q_P_week(iw,1):Q_P_week(iw,2)) = max(294, min(300, mean(T_z_data(Q_P_week(iw,1):Q_P_week(iw,2))) ) );
 end
+T_0(18591:end) = T_0(18591:end);
 
 figure(11); hold off;
 plot(T_z_data(1:end)); hold on;
@@ -83,23 +85,23 @@ if 0
     %-0.0147    1.5324    1.8761    1.3569    0.4108    1.6934    1.1552   -1.1223    1.4481    0.7957    3.4114
 
     %Constraints
-    K_D_min = 0.4e1;
-    K_D_max = 0.5e1;
-    tau_D_min = 1*ts;
-    tau_D_max = 3*ts;
-    K_I_min = 3e-1;
-    K_I_max = 4e-1;
-    tau_I_min = 1*ts;
-    tau_I_max = 3*ts;
+    K_D_min = 6e0;
+    K_D_max = 6e0;
+    tau_D_min = 10*ts;
+    tau_D_max = 30*ts;
+    K_I_min = 3e-2;
+    K_I_max = 4e0;
+    tau_I_min = 10*ts;
+    tau_I_max = 30*ts;
     a_I_min = -3e0;
     a_I_max = 3e0;
     b_I_min = -5e2;
     b_I_max = 5e2;
-    u_1_min = -1e1;
-    u_1_max = 0;
-    u_2_min = -1e0;
-    u_2_max = 0;
-    u_3_min = 2e0;
+    u_1_min = -1e0;
+    u_1_max = -1e-6;
+    u_2_min = -1e-1;
+    u_2_max = -1e-6;
+    u_3_min = 2e-3;
     u_3_max = 1e1;
     d_D_min = 1e0;
     d_D_max = 1e1;
@@ -113,7 +115,7 @@ if 0
 
     %     options = optimset('maxIter', 100,'Display','iter');
     %     [par, fval, exitflag, e] = fminsearch(@func, par_0, options);
-    options = optimoptions('particleswarm','maxIter', 200, 'Display','iter','SwarmSize',200,'PlotFcn', @custom_pswplotbestf);%);
+    options = optimoptions('particleswarm','maxIter', 200, 'Display','iter','SwarmSize',100,'PlotFcn', @custom_pswplotbestf);%);
 
     options.InitialSwarmMatrix = par;
     [par, fval, exitflag, e] = particleswarm(@func, length(par_0), lb, ...
@@ -180,7 +182,12 @@ if 1
     plot(T_z_data(1:length(T_z)),'b')
     xlim('tight')
     legend('Room temperature model','Room temperature measurements','Location','best')
-        ylabel({'Temperature'}); xlabel('Time step')
+    ylabel({'Temperature'});
+    hca=gca;
+    hcaX=hca.XRuler;
+    hcaX.SecondaryLabel.Position(2) = hcaX.SecondaryLabel.Position(2)*1.004;
+    hcaX.SecondaryLabel.Position(1) = hcaX.SecondaryLabel.Position(1)*1.04;
+
     subplot(4,1,3); hold off;
     plot(Q_I(1:end),'r'); hold on;
     plot(Q_D(1:end),'b')
@@ -209,8 +216,8 @@ for i = 1:4
     xlabel('Time step')
     xlim('tight')
 
-ax = gca;
-ax.XAxis.Exponent = 4;
+    ax = gca;
+    ax.XAxis.Exponent = 4;
     if i ==2
         legend('Room temperature model','Room temperature measurements','Location','best')
     end
@@ -218,68 +225,13 @@ ax.XAxis.Exponent = 4;
     exportgraphics(gcf,name,'BackgroundColor','none');
 end
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%
-% k_0 = max([M.d_I,M.d_D])+2;
-% u = 0*ones(k_0,1);
-% Q_I = 0*ones(k_0,1);
-% Q_D = 0*ones(k_0,1);
-% T_z = T_z_data(1:k_0);
-% k_min = 1000;
-% sum_T_z = 0*ones(k_0,1);
-% %u = (u_1.*u_data(:,1) + u_2.*u_data(:,2)).*u_data(:,3);
-% %u = u_data;
-% u_0 = 295*ones(1,length(u_data(:,1)));
-% u_0 = 295*ones(1,length(u_data(:,1)));
-%
-% u_0(58205:154311) = 296;
-% T_z_0 = T_z_data;
-% Q_P = M.u_3*(0.5+0.5*sin((1000:1:length(u_data(:,1))+1000-1)*(2*pi)/1440));% + ...
-% %0.5*sin((100:1:length(u_data(:,1))+100-1)*(2*pi)/10080));
-% %Q_P = T_z_data+u_0';
-% %        figure(11); hold off;
-% %         plot(T_z_data);  hold on;
-% %         plot(295 + Q_P)
-%
-% for k = k_0:1:length(u_data(:,1))-M.d_I
-%
-%
-%     sum_T_z(k) = sum_T_z(k-1) + (T_z_data(k-1+M.d_I)-T_z(k-1));
-%     u(k) = M.a_I*(M.u_1*(T_z_data(k-1+M.d_I)-T_z(k-1)) + M.u_2*sum_T_z(k-1));
-%     %max_u = 0.1;
-%     %u(k-1) = u(k-2) + max(min(u(k-1)-u(k-2),max_u),-max_u);
-%     %sum_T_z(k) = sum_T_z(k-1) + (u_0(k)-T_z(k-1));
-%     %u(k-1) = u_3*(u_0(k)-T_z(k-1)) + u_2*sum_T_z(k) + u_1*(T_z_data(k-1+d_I)-T_z(k-1));
-%
-%     [T_z(k), Q_I(k), Q_D(k)] = HVAC(T_z(k-1), T_z(k-M.d_D-1), u(k-1-M.d_I), T_o_data(k-M.d_I-1), Q_I(k-1), Q_D(k-1) , Q_P(k),  M);
-%
-%
-% end
-%
-%
-% if 1
-%     figure(41);
-%     subplot(4,1,1:2); hold off;
-%     plot(T_o_data); hold on;
-%     plot(T_z(1:end),'r');
-%     plot(T_z_data(1:length(T_z)),'b')
-%     xlim('tight')
-%     legend('Outside temperature','Room temperature model','Room temperature measurements','Location','best')
-%     subplot(4,1,3); hold off;
-%     plot(Q_I(1:end)/c_z,'r'); hold on;
-%     plot(Q_D(1:end)/c_z,'b')
-%     xlim('tight')
-%     legend('Energy controler','Energy outside','Location','best')
-%     subplot(4,1,4); hold off;
-%     plot(u(1:end),'b'); hold on;
-%     legend('Control signal','Location','best')
-%     ylabel('$u$'); xlabel('Time step')
-%     xlim('tight')
-%     pause(0.0001)
-%
-% end
+figure(32)
+subplot(2,1,1);
+plot(u,atan(u),'.r'); hold on; xlim("tight"); ylim("tight"); axis manual;
+plot([-2,2],[-2,2],'b');
+legend('Nonlinearity arctan($u$)','Linear function','Location','best','interpreter','latex')
+name = '..\HVAC_Images\HVAC_model_input.pdf';
+exportgraphics(gcf,name,'BackgroundColor','none');
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -309,7 +261,11 @@ if 1
     plot(T_z_data(1:length(T_z)),'b')
     xlim('tight')
     legend('Outside temperature measurements','Room temperature model','Room temperature measurements','Location','best')
-        ylabel({'Temperature'}); xlabel('Time step')
+    ylabel({'Temperature'}); xlabel('Time step')
+    hca=gca;
+    hcaX=hca.XRuler;
+    hcaX.SecondaryLabel.Position(2) = hcaX.SecondaryLabel.Position(2)*1.024;
+    hcaX.SecondaryLabel.Position(1) = hcaX.SecondaryLabel.Position(1)*1.04;
     subplot(4,1,3); hold off;
     plot(Q_I(1:end),'r'); hold on;
     plot(Q_D(1:end),'b')
@@ -426,7 +382,7 @@ K_O = 0*ones(k_0,1)>1;
 %     T_0(5805:15431) = 295.5;
 % end
 
-T_z_0 = T_z_data;
+T_z_0 = max(294, min(300, T_z_data));
 u_th = 0.9;
 %T_z_0(T_z_0>(u_0'+u_th)) = u_0(T_z_0>(u_0'+u_th))'+u_th; % - 0.5*randn(length(T_z_data), 1);
 %T_z_0(T_z_0<(u_0'-u_th)) = u_0(T_z_0<(u_0'-u_th))'-u_th; % - 0.5*randn(length(T_z_data), 1);
@@ -441,7 +397,7 @@ for k = k_0:1:(length(u_data(:,1))-d_I-round(tau_I/ts))
 
     %     if abs(T_0(k)-T_z(k-1))>0.5
     sum_T_z(k) = sum_T_z(k-1) + (T_0(k)-T_z(k-1));
-    u(k) = u_1*(T_0(k)-T_z(k-1)) + u_2*sum_T_z(k);
+    u(k) = u_1*((T_0(k)-T_z(k-1)) + u_2*sum_T_z(k));
     %u(k-d_I) = u_1*(T_0(k)-T_z(k-1)) + u_2*(T_z_data(k-1)-T_z(k-1));
     %     else
     %         sum_T_z(k) = 0;
@@ -467,8 +423,8 @@ T_z_fft = fft(T_z(k_min:k));
 
 if 0
     figure(42); hold off;
-    plot(log(abs(T_z_0_fft(1:end/2)))); hold on;
-    plot(log(abs(T_z_fft(1:end/2))));
+    plot((abs(T_z_0_fft(1:end/2)))); hold on;
+    plot((abs(T_z_fft(1:end/2))));
 end
 
 %  real( (T_z_0_fft(10:floor(end/2)))-(T_z_fft(10:floor(end/2))) )
@@ -477,14 +433,23 @@ end
 %  sum(sqrt(real( (T_z_0_fft(10:floor(end/2)))-(T_z_fft(10:floor(end/2))) ).^2 + ...
 %      imag( (T_z_0_fft(10:floor(end/2)))-(T_z_fft(10:floor(end/2))) ).^2))
 
-err_fft =  sum(abs((T_z_0_fft(1:floor(end/2)))- abs(T_z_fft(1:floor(end/2))) )); %+ ...
-  %  sum(abs( angle(T_z_0_fft(10:floor(end/2))) - angle(T_z_fft(10:floor(end/2))) ));
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+err_fft =  sum(abs(log(T_z_0_fft(1:floor(end/2)))- abs(log(T_z_fft(1:floor(end/2)))) ))*1e-2; %+ ...
+%  sum(abs( angle(T_z_0_fft(10:floor(end/2))) -
+%  angle(T_z_fft(10:floor(end/2))) ));8
 %err_E = sum((abs(Q_I)).^2)*1e-4;
-err_T_z = sum((T_z(k_min:k)-T_z_0(k_min:k)).^2)*1e4;
+err_T_z = sum((T_z(k_min:k)-T_z_0(k_min:k)).^2);
 %err_Q = abs(var(Q_I(k_min:k)) - (var(Q_D(k_min:k))));
-err_u =  sum((var(u)-3e0).^2)*1e5; %sum((mean(u)).^2)*1e3 +
+err_u =  abs(var(u)-1e0)*1e6; %sum((mean(u)).^2)*1e3 +
 %err_tau = (sqrt(1/tau_I))*1e2;
 err =  err_T_z + err_u + err_fft; % + err_E;
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
 % figure(1);
 % subplot(4,1,1:2); hold off;
@@ -574,7 +539,7 @@ switch state
             %u(k-1) = u_3*(u_0(k)-T_z(k-1)) + u_2*sum_T_z(k) + u_1*(T_z_data(k-1+d_I)-T_z(k-1));
             %             if abs(T_0(k)-T_z(k-1))>0.5
             sum_T_z(k) = sum_T_z(k-1) + (T_0(k)-T_z(k-1));
-            u(k) = u_1*(T_0(k)-T_z(k-1))+ u_2*sum_T_z(k);
+            u(k) = u_1*((T_0(k)-T_z(k-1))+ u_2*sum_T_z(k));
             %u(k-d_I) = u_1*(T_0(k)-T_z(k-1)) + u_2*(T_z_data(k-1)-T_z(k-1));
             %             else
             %                 sum_T_z(k) = 0;
