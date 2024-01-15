@@ -171,7 +171,9 @@ for k = k_0:1:(length(u_data(:,1))-M.d_I)
     %         sum_T_z(k) = 0;
     %         u(k) = 0;
     %     end
-    [T_z(k), Q_I(k), Q_D(k)] = HVAC(T_z(k-1), T_z(k-M.d_I-1), T_z(k-M.d_D-1), u(k-1-M.d_I), T_o_data(k-M.d_I-1), T_o_data(k-M.d_D-1), Q_I(k-1), Q_D(k-1) , Q_P(k-1),  M);
+    [T_z(k), Q_I(k), Q_D(k)] = HVAC(T_z(k-1), T_z(k-M.d_I-1), T_z(k-M.d_D-1),...
+        u(k-1-M.d_I), T_o_data(k-M.d_I-1), T_o_data(k-M.d_D-1),...
+        Q_I(k-1), Q_D(k-1) , Q_P(k-1),  M);
 
 end
 
@@ -182,7 +184,7 @@ if 1
     plot(T_z_data(1:length(T_z)),'b')
     xlim('tight')
     legend('Room temperature model','Room temperature measurements','Location','best')
-    ylabel({'Temperature'});
+    ylabel({'Temperature [°K]'});
     hca=gca;
     hcaX=hca.XRuler;
     hcaX.SecondaryLabel.Position(2) = hcaX.SecondaryLabel.Position(2)*1.004;
